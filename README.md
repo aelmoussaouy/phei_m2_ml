@@ -34,7 +34,7 @@ There are **two ways** to run the code:
    ```
    (or change `inputFileName` in the notebook to point to your copy).
 2. Click an **Open in Colab** badge above.
-3. Run the cells in order (`Runtime > Run all`). The first cells install ROOT, which takes a few minutes, and then ask you to authorise access to Google Drive.
+3. Run the first code cell: it installs conda and restarts the runtime automatically. Then run the remaining cells in order (`Runtime > Run after`, or one by one). Installing ROOT takes a few minutes, and you will be asked to authorise access to Google Drive.
 
 ---
 
