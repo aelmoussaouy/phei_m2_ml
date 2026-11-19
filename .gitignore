@@ -1,1 +1,5 @@
 .DS_Store
+.vscode/
+scripts/dataset/
+*.png
+scripts/*.root
