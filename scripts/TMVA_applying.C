@@ -4,9 +4,14 @@
 #include "TCanvas.h"
 #include "TLegend.h"
 #include "TStyle.h"
+#include "TROOT.h"
 #include "TMVA/Reader.h"
 
 void TMVA_applying() {
+    // ROOT 6.40 renders canvases via a headless browser by default, which fails on SaveAs here.
+    // Turn web graphics off for this session only; other scripts are unaffected.
+    gROOT->SetWebDisplay("off");
+
     TFile *inputFile = TFile::Open("../data/Higgs_data.root");
     // Index 0 = signal, 1 = background (same order as hists below)
     TTree *trees[2] = {(TTree *)inputFile->Get("sig_tree"),
@@ -28,6 +33,7 @@ void TMVA_applying() {
     reader->BookMVA("BDT method",
                     "dataset/weights/TMVAClassification_BDT.weights.xml");
 
+    // Title string is "title;x-axis label;y-axis label". 50 bins over [-1, 1], the AdaBoost BDT output range
     TH1F *hSig = new TH1F("hSig", "BDT response;BDT score;Normalised events", 50, -1, 1);
     TH1F *hBkg = new TH1F("hBkg", "BDT response;BDT score;Normalised events", 50, -1, 1);
     TH1F *hists[2] = {hSig, hBkg};
@@ -39,7 +45,7 @@ void TMVA_applying() {
 
         // Note: this loops over all events, including the ones used for training
         for (Long64_t ievt = 0; ievt < trees[t]->GetEntries(); ++ievt) {
-            trees[t]->GetEntry(ievt);
+            trees[t]->GetEntry(ievt);  // loads event ievt into vars[]
             Double_t bdtScore = reader->EvaluateMVA("BDT method");
             // bdtScore near +1 -> signal-like, near -1 -> background-like
             hists[t]->Fill(bdtScore);
@@ -53,14 +59,17 @@ void TMVA_applying() {
     hSig->Scale(1.0 / hSig->Integral());
     hBkg->Scale(1.0 / hBkg->Integral());
 
+    // Solid outline plus a 30%-opaque fill, so overlapping regions stay visible
     hSig->SetLineColor(kBlue);   hSig->SetFillColorAlpha(kBlue, 0.3);
     hBkg->SetLineColor(kRed);    hBkg->SetFillColorAlpha(kRed, 0.3);
     // The first histogram drawn sets the y-range, so make room for the taller of the two
     hSig->SetMaximum(1.2 * std::max(hSig->GetMaximum(), hBkg->GetMaximum()));
 
+    // HIST: draw as a histogram without error bars; SAME: overlay on the current canvas
     hSig->Draw("HIST");
     hBkg->Draw("HIST SAME");
 
+    // Legend corners (x1, y1, x2, y2) as fractions of the pad; "f" shows the fill style in the legend
     TLegend *leg = new TLegend(0.65, 0.75, 0.88, 0.88);
     leg->AddEntry(hSig, "Signal", "f");
     leg->AddEntry(hBkg, "Background", "f");
